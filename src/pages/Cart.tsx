@@ -9,7 +9,7 @@ import {formatPKR} from '../utils/currency';
 const FREE_SHIPPING = 5000;
 
 export default function Cart() {
-  const {lines, subtotal, updateQuantity, removeItem, clearCart} = useCart();
+  const {lines, subtotal, updateQuantity, removeItem, clearCart, checkout, loading, error} = useCart();
   const shipping = subtotal > 0 && subtotal < FREE_SHIPPING ? 450 : 0;
   const total = subtotal + shipping;
   const progress = Math.min(100, (subtotal / FREE_SHIPPING) * 100);
@@ -21,8 +21,10 @@ export default function Cart() {
           <Breadcrumbs items={[{label: 'Home', to: '/'}, {label: 'Shopping Bag'}]} />
           <div className="cart-title">
             <div><span>YOUR SELECTION</span><h1>Shopping Bag</h1></div>
-            {lines.length > 0 && <button onClick={clearCart}>CLEAR BAG</button>}
+            {lines.length > 0 && <button onClick={() => clearCart().catch(() => undefined)} disabled={loading}>CLEAR BAG</button>}
           </div>
+
+          {error && <div className="form-success" role="alert">{error}</div>}
 
           {lines.length === 0 ? (
             <div className="cart-empty">
@@ -55,10 +57,10 @@ export default function Cart() {
                         <div className="cart-line__mobile-price">{formatPKR(line.product.price)}</div>
                       </div>
                       <div className="cart-line__quantity">
-                        <QuantitySelector compact value={line.quantity} onChange={(next) => updateQuantity(line.productId, next, line.variantId)} />
+                        <QuantitySelector compact value={line.quantity} onChange={(next) => updateQuantity(line.productId, next, line.variantId).catch(() => undefined)} />
                       </div>
-                      <strong className="cart-line__price">{formatPKR(line.product.price * line.quantity)}</strong>
-                      <button className="cart-line__remove" onClick={() => removeItem(line.productId, line.variantId)} aria-label={`Remove ${line.product.title}`}><Trash2 size={17} /></button>
+                      <strong className="cart-line__price">{formatPKR(line.lineTotal)}</strong>
+                      <button className="cart-line__remove" onClick={() => removeItem(line.productId, line.variantId).catch(() => undefined)} disabled={loading} aria-label={`Remove ${line.product.title}`}><Trash2 size={17} /></button>
                     </article>
                   );
                 })}
@@ -71,7 +73,7 @@ export default function Cart() {
                 <div className="summary-line"><span>Subtotal</span><b>{formatPKR(subtotal)}</b></div>
                 <div className="summary-line"><span>Shipping</span><b>{shipping ? formatPKR(shipping) : 'COMPLIMENTARY'}</b></div>
                 <div className="summary-total"><span>Total</span><strong>{formatPKR(total)}</strong></div>
-                <button className="button button--gold button--full" onClick={() => window.alert('Secure Shopify checkout will be enabled when the commerce connection is activated.')}>PROCEED TO CHECKOUT →</button>
+                <button className="button button--gold button--full" onClick={() => checkout().catch(() => undefined)} disabled={loading}>PROCEED TO CHECKOUT →</button>
                 <p className="secure-note"><LockKeyhole size={14} /> Secure encrypted checkout</p>
                 <div className="summary-payments">
                   <img src="/assets/payments/visa.svg" alt="Visa" />

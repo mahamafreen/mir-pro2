@@ -42,3 +42,5 @@ export const localCatalogService: CatalogService = {
     return collections;
   },
 };
+
+export {shopifyCatalogService} from './shopifyStorefrontClient';
