@@ -11,6 +11,7 @@ export interface CatalogService {
   getProducts(query?: ProductQuery): Promise<Product[]>;
   getProduct(handle: string): Promise<Product | undefined>;
   getCollections(): Promise<Collection[]>;
+  getCollection(handle: string): Promise<Collection | undefined>;
 }
 
 /**
@@ -40,6 +41,11 @@ export const localCatalogService: CatalogService = {
   },
   async getCollections() {
     return collections;
+  },
+  async getCollection(handle) {
+    const collection = collections.find((item) => item.id === handle);
+    if (!collection) return undefined;
+    return {...collection, handle: collection.handle ?? collection.id, products: products.filter((item) => item.collection.toLowerCase() === handle.toLowerCase())};
   },
 };
 

@@ -1,7 +1,7 @@
 import type {ProductQuery, CatalogService} from './catalogService';
 import {mapShopifyProduct} from './commerceAdapter';
 import type {Collection, Product} from '../types/product';
-import type {ShopifyProduct} from './commerceAdapter';
+import type {ShopifyImage, ShopifyProduct} from './commerceAdapter';
 
 const PRODUCTS_QUERY = `
   query Products($first: Int!, $query: String) {
@@ -53,6 +53,57 @@ interface ShopifyProductsResponse {
     nodes: ShopifyProduct[];
   };
 }
+
+interface ShopifyCollection {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  image: ShopifyImage | null;
+  products: {nodes: ShopifyProduct[]};
+}
+
+interface ShopifyCollectionsResponse {
+  collections: {nodes: ShopifyCollection[]};
+}
+
+interface ShopifyCollectionResponse {
+  collection: ShopifyCollection | null;
+}
+
+const COLLECTION_FIELDS = `
+  id
+  title
+  handle
+  description
+  image { url altText }
+  products(first: 100) {
+    nodes {
+      id
+      handle
+      title
+      description
+      productType
+      vendor
+      tags
+      featuredImage { url altText }
+      images(first: 50) { nodes { url altText } }
+      variants(first: 100) {
+        nodes {
+          id
+          title
+          availableForSale
+          selectedOptions { name value }
+          price { amount currencyCode }
+          compareAtPrice { amount currencyCode }
+        }
+      }
+    }
+  }
+`;
+
+const COLLECTIONS_QUERY = `query Collections($first: Int!) { collections(first: $first) { nodes { ${COLLECTION_FIELDS} } } }`;
+const COLLECTION_QUERY = `query Collection($handle: String!) { collection(handle: $handle) { ${COLLECTION_FIELDS} } }`;
 
 interface ShopifyGraphQLResponse<TData> {
   data?: TData;
@@ -276,6 +327,16 @@ const assertCartResult = (cart: ShopifyCart | null | undefined, userErrors: Shop
   return mapShopifyCart(cart);
 };
 
+const mapShopifyCollection = (collection: ShopifyCollection): Collection => ({
+  id: collection.id,
+  handle: collection.handle,
+  title: collection.title,
+  eyebrow: 'MIR COLLECTION',
+  description: collection.description || 'A considered edit from the MIR jewellery collection.',
+  image: collection.image?.url ?? '',
+  products: collection.products.nodes.map(mapShopifyProduct),
+});
+
 export const getShopifyCart = async (cartId: string): Promise<ShopifyCartSnapshot | undefined> => {
   const data = await queryShopify<{cart: ShopifyCart | null}>(CART_QUERY, {id: cartId});
   return data.cart ? mapShopifyCart(data.cart) : undefined;
@@ -336,7 +397,12 @@ export const shopifyCatalogService: CatalogService = {
     return products.find((product) => product.handle === handle || product.id === handle);
   },
   async getCollections(): Promise<Collection[]> {
-    return [];
+    const data = await queryShopify<ShopifyCollectionsResponse>(COLLECTIONS_QUERY, {first: 100});
+    return data.collections.nodes.map(mapShopifyCollection);
+  },
+  async getCollection(handle: string): Promise<Collection | undefined> {
+    const data = await queryShopify<ShopifyCollectionResponse>(COLLECTION_QUERY, {handle});
+    return data.collection ? mapShopifyCollection(data.collection) : undefined;
   },
 };
 
