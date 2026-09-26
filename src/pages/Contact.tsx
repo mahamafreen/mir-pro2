@@ -1,5 +1,6 @@
-import {Clock3, Mail, MessageCircle} from 'lucide-react';
+import {Phone} from 'lucide-react';
 import {PageHero} from '../components/PageHero';
+import {SocialLinks} from '../components/SocialLinks';
 
 export default function Contact() {
   return (
@@ -14,13 +15,17 @@ export default function Contact() {
           <div className="contact-form-wrap">
             <span className="contact-form-wrap__eyebrow">CUSTOMER CARE</span>
             <h2>How may we assist you?</h2>
-            <p>Approved email, phone, address and social details will be displayed here once supplied by the client.</p>
-            <div className="contact-placeholder" role="status">Contact channels pending client information.</div>
             <div className="contact-channels">
-              <div><Mail size={19} /><span><b>Email Concierge</b><small>Use the enquiry form for product and order assistance.</small></span></div>
-              <div><MessageCircle size={19} /><span><b>Customer Care</b><small>Support details can be connected to your preferred channel.</small></span></div>
-              <div><Clock3 size={19} /><span><b>Response Time</b><small>Enquiries are handled by the MIR customer care team.</small></span></div>
+              <div>
+                <Phone size={19} aria-hidden="true" />
+                <span>
+                  <b>Customer Care</b>
+                  <small><a href="tel:03338228103">0333 8228103</a></small>
+                </span>
+              </div>
             </div>
+            <h3 className="contact-social-heading">Follow MIR</h3>
+            <SocialLinks className="footer-socials" />
           </div>
         </div>
       </section>

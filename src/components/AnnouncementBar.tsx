@@ -1,4 +1,5 @@
 import {Truck} from 'lucide-react';
+import {SocialLinks} from './SocialLinks';
 
 export function AnnouncementBar() {
   return (
@@ -12,7 +13,7 @@ export function AnnouncementBar() {
           <Truck size={16} strokeWidth={1.5} />
           Free Delivery: On Orders Above PKR 5000
         </span>
-        <span className="announcement__socials-note">Social links pending</span>
+        <SocialLinks className="announcement__socials" />
       </div>
     </div>
   );

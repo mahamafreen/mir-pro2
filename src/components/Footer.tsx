@@ -1,6 +1,7 @@
 import {Link} from 'react-router-dom';
 import {BrandMark} from './BrandMark';
 import {Newsletter} from './Newsletter';
+import {SocialLinks} from './SocialLinks';
 
 const columns = [
   {
@@ -43,7 +44,7 @@ export function Footer() {
         <div className="footer-brand">
           <BrandMark compact />
           <p>Timeless jewellery for a more beautiful tomorrow.</p>
-          <div className="footer-socials">Social links pending client URLs.</div>
+          <SocialLinks className="footer-socials" />
         </div>
         {columns.map((column) => (
           <div className="footer-column" key={column.title}>
