@@ -291,7 +291,6 @@ const getShopifyStoreUrl = (path: string): string | undefined => {
 };
 
 export const getShopifyCustomerAccountUrl = () => getShopifyStoreUrl('/account');
-export const getShopifyNewsletterSignupUrl = () => getShopifyStoreUrl('/password');
 
 const queryShopify = async <TData>(query: string, variables: Record<string, unknown>): Promise<TData> => {
   const config = getShopifyConfig();
