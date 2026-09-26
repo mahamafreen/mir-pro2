@@ -1,13 +1,31 @@
 import {ArrowRight} from 'lucide-react';
 import {Link} from 'react-router-dom';
+import {useEffect, useState} from 'react';
 import {FeatureStrip} from '../components/FeatureStrip';
 import {ProductCard} from '../components/ProductCard';
 import {SectionHeading} from '../components/SectionHeading';
 import {TrustStrip} from '../components/TrustStrip';
-import {products} from '../data/products';
+import {shopifyCatalogService} from '../services/catalogService';
+import type {Product} from '../types/product';
 
 export default function Home() {
-  const bestSellers = products.filter((product) => product.bestSeller).slice(0, 6);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    shopifyCatalogService.getProducts()
+      .then(setProducts)
+      .catch(() => { setError(true); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const bestSellers = products.slice(0, 6);
+  let productContent;
+  if (loading) productContent = <div className="empty-state"><h2>Loading jewellery...</h2></div>;
+  else if (error) productContent = <div className="empty-state"><h2>Jewellery is temporarily unavailable.</h2></div>;
+  else if (!bestSellers.length) productContent = <div className="empty-state"><h2>No jewellery available yet.</h2></div>;
+  else productContent = bestSellers.map((product) => <ProductCard product={product} key={product.id} />);
 
   return (
     <>
@@ -36,7 +54,7 @@ export default function Home() {
           <SectionHeading eyebrow="BEST SELLERS" title="Our Best Sellers" />
           <div className="best-seller-layout">
             <div className="best-seller-products">
-              {bestSellers.map((product) => <ProductCard product={product} key={product.id} />)}
+              {productContent}
             </div>
             <aside className="mir-promise">
               <span className="mir-promise__line" />

@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ChevronDown, Heart, PackageCheck, ShieldCheck, Truck} from 'lucide-react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {Breadcrumbs} from '../components/Breadcrumbs';
@@ -7,24 +7,51 @@ import {ProductGallery} from '../components/ProductGallery';
 import {QuantitySelector} from '../components/QuantitySelector';
 import {Rating} from '../components/Rating';
 import {useCart} from '../context/CartContext';
-import {getProductByHandle, getRelatedProducts} from '../data/products';
+import {shopifyCatalogService} from '../services/catalogService';
+import type {Product} from '../types/product';
 import {formatPKR} from '../utils/currency';
 
 export default function ProductPage() {
   const {id} = useParams();
-  const product = getProductByHandle(id);
-  const {addItem} = useCart();
+  const [product, setProduct] = useState<Product>();
+  const [related, setRelated] = useState<Product[]>([]);
+  const [productLoading, setProductLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const {addItem, loading, error: cartError} = useCart();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [variantId, setVariantId] = useState(product?.variants[0]?.id ?? '');
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    setProductLoading(true);
+    setError(false);
     setQuantity(1);
-    setVariantId(product?.variants[0]?.id ?? '');
-  }, [product?.id]);
+    shopifyCatalogService.getProduct(id ?? '')
+      .then(async (item) => {
+        if (!active) return;
+        setProduct(item);
+        setVariantId(item?.variants[0]?.id ?? '');
+        if (item) {
+          const relatedProducts = await shopifyCatalogService.getProducts({category: item.category});
+          if (active) setRelated(relatedProducts.filter((relatedItem) => relatedItem.id !== item.id).slice(0, 4));
+        } else {
+          setRelated([]);
+        }
+      })
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setProductLoading(false); });
+    return () => { active = false; };
+  }, [id]);
 
-  const related = useMemo(() => (product ? getRelatedProducts(product, 4) : []), [product]);
+  if (productLoading) {
+    return <section className="section"><div className="container empty-state"><h1>Loading piece...</h1><p>Bringing the MIR details into view.</p></div></section>;
+  }
+
+  if (error) {
+    return <section className="section"><div className="container empty-state"><h1>We could not load this piece.</h1><p>Please try again in a moment.</p><button className="button button--gold" onClick={() => window.location.reload()}>TRY AGAIN</button></div></section>;
+  }
 
   if (!product) {
     return (
@@ -37,15 +64,19 @@ export default function ProductPage() {
     );
   }
 
-  const add = () => {
-    addItem(product.id, quantity, variantId);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1500);
+  const add = async () => {
+    try {
+      await addItem(product.id, quantity, variantId);
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1500);
+    } catch { return; }
   };
 
-  const buyNow = () => {
-    addItem(product.id, quantity, variantId);
-    navigate('/cart');
+  const buyNow = async () => {
+    try {
+      await addItem(product.id, quantity, variantId);
+      navigate('/cart');
+    } catch { return; }
   };
 
   const variantGroups = product.variants.reduce<Record<string, typeof product.variants>>((acc, variant) => {
@@ -101,10 +132,11 @@ export default function ProductPage() {
 
               <div className="purchase-row">
                 <QuantitySelector value={quantity} onChange={setQuantity} />
-                <button className="button button--gold button--grow" onClick={add}>{added ? 'ADDED TO CART ✓' : 'ADD TO CART'}</button>
+                <button className="button button--gold button--grow" onClick={add} disabled={loading || !product.available || !variantId}>{added ? 'ADDED TO CART ✓' : 'ADD TO CART'}</button>
                 <button className="wish-button" aria-label="Add to wishlist"><Heart size={20} strokeWidth={1.4} /></button>
               </div>
-              <button className="button button--outline button--full" onClick={buyNow}>BUY NOW</button>
+              <button className="button button--outline button--full" onClick={buyNow} disabled={loading || !product.available || !variantId}>BUY NOW</button>
+              {cartError && <p className="form-success" role="alert">{cartError}</p>}
 
               <div className="product-assurances">
                 <div><Truck size={19} /><span><b>Complimentary delivery</b> on orders above PKR 5,000</span></div>

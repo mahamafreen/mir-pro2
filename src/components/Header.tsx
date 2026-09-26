@@ -3,6 +3,9 @@ import {ChevronDown, Menu, Search, ShoppingBag, UserRound, X} from 'lucide-react
 import {Link, NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {useCart} from '../context/CartContext';
 import {formatPKR} from '../utils/currency';
+import {shopifyCatalogService} from '../services/catalogService';
+import {getShopifyCustomerAccountUrl} from '../services/shopifyStorefrontClient';
+import type {Collection} from '../types/product';
 import {BrandMark} from './BrandMark';
 
 type NavItem = {
@@ -28,13 +31,7 @@ const navItems: NavItem[] = [
   {
     label: 'COLLECTIONS',
     to: '/collections',
-    children: [
-      {label: 'Heritage', to: '/jewellery?collection=heritage', note: 'Regal forms with enduring presence'},
-      {label: 'Signature', to: '/jewellery?collection=signature'},
-      {label: 'Bridal', to: '/jewellery?collection=bridal'},
-      {label: 'Nocturne', to: '/jewellery?collection=nocturne'},
-      {label: 'View Collections', to: '/collections'},
-    ],
+    children: [{label: 'View Collections', to: '/collections'}],
   },
   {label: 'ABOUT US', to: '/about'},
   {label: 'CONTACT', to: '/contact'},
@@ -44,14 +41,20 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [collections, setCollections] = useState<Collection[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const {itemCount, subtotal} = useCart();
   const inputRef = useRef<HTMLInputElement>(null);
+  const customerAccountUrl = getShopifyCustomerAccountUrl();
 
   useEffect(() => {
     if (searchOpen) window.setTimeout(() => inputRef.current?.focus(), 20);
   }, [searchOpen]);
+
+  useEffect(() => {
+    shopifyCatalogService.getCollections().then(setCollections).catch(() => setCollections([]));
+  }, []);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -65,13 +68,24 @@ export function Header() {
     setSearchOpen(false);
   };
 
+  const navigationItems = navItems.map((item) => item.label !== 'COLLECTIONS' ? item : {
+    ...item,
+    children: [
+      ...collections.slice(0, 5).map((collection): {label: string; to: string; note?: string} => ({
+        label: collection.title,
+        to: `/collections/${collection.handle ?? collection.id}`,
+      })),
+      {label: 'View Collections', to: '/collections'},
+    ],
+  });
+
   return (
     <>
       <header className="site-header">
         <div className="container site-header__inner">
           <BrandMark />
           <nav className="desktop-nav" aria-label="Primary navigation">
-            {navItems.map((item) => (
+            {navigationItems.map((item) => (
               <div className="desktop-nav__item" key={item.to}>
                 <NavLink
                   to={item.to}
@@ -100,9 +114,11 @@ export function Header() {
             <button className="icon-button" aria-label="Search" onClick={() => setSearchOpen(true)}>
               <Search size={21} strokeWidth={1.5} />
             </button>
-            <Link className="icon-button desktop-account" to="/contact" aria-label="Account">
-              <UserRound size={20} strokeWidth={1.5} />
-            </Link>
+            {customerAccountUrl && (
+              <a className="icon-button desktop-account" href={customerAccountUrl} aria-label="Customer account" title="Customer account">
+                <UserRound size={20} strokeWidth={1.5} />
+              </a>
+            )}
             <Link className="cart-pill" to="/cart" aria-label={`Cart with ${itemCount} items`}>
               <ShoppingBag size={17} strokeWidth={1.6} />
               <span>{itemCount > 0 ? formatPKR(subtotal) : 'PKR 0'}</span>
@@ -121,7 +137,7 @@ export function Header() {
 
         <div className={`mobile-nav${mobileOpen ? ' mobile-nav--open' : ''}`}>
           <div className="container mobile-nav__inner">
-            {navItems.map((item) => (
+            {navigationItems.map((item) => (
               <div className="mobile-nav__group" key={item.to}>
                 <NavLink to={item.to} end={item.to === '/'}>
                   <span>{item.label}</span>
@@ -136,6 +152,7 @@ export function Header() {
                 )}
               </div>
             ))}
+            {customerAccountUrl && <a href={customerAccountUrl}>CUSTOMER ACCOUNT</a>}
           </div>
         </div>
       </header>

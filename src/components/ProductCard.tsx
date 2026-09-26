@@ -6,14 +6,20 @@ import type {Product} from '../types/product';
 import {formatPKR} from '../utils/currency';
 import {Rating} from './Rating';
 
-export function ProductCard({product}: {product: Product}) {
-  const {addItem} = useCart();
+export function ProductCard({product}: Readonly<{product: Product}>) {
+  const {addItem, loading, error} = useCart();
   const [added, setAdded] = useState(false);
+  const [actionError, setActionError] = useState<string>();
 
-  const addToCart = () => {
-    addItem(product.id, 1, product.variants[0]?.id);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1400);
+  const addToCart = async () => {
+    setActionError(undefined);
+    try {
+      await addItem(product.id, 1, product.variants[0]?.id);
+      setAdded(true);
+      window.setTimeout(() => setAdded(false), 1400);
+    } catch (addError) {
+      setActionError(addError instanceof Error ? addError.message : 'Unable to add this piece to your cart.');
+    }
   };
 
   return (
@@ -38,10 +44,11 @@ export function ProductCard({product}: {product: Product}) {
             {product.compareAtPrice && <del>{formatPKR(product.compareAtPrice)}</del>}
           </div>
         </div>
-        <button className={`product-card__cart${added ? ' product-card__cart--added' : ''}`} onClick={addToCart} aria-label={`Add ${product.title} to cart`}>
+        <button className={`product-card__cart${added ? ' product-card__cart--added' : ''}`} onClick={addToCart} disabled={loading || !product.available} aria-label={error ?? `Add ${product.title} to cart`}>
           {added ? <Check size={15} /> : <ShoppingBag size={15} />}
         </button>
       </div>
+      {actionError && <span className="form-success" role="alert">{actionError}</span>}
     </article>
   );
 }
