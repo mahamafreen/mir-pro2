@@ -1,9 +1,10 @@
 import {useEffect, useRef, useState} from 'react';
-import {ChevronDown, Menu, MessageCircle, Search, ShoppingBag, X} from 'lucide-react';
+import {ChevronDown, Menu, Search, ShoppingBag, UserRound, X} from 'lucide-react';
 import {Link, NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {useCart} from '../context/CartContext';
 import {formatPKR} from '../utils/currency';
 import {shopifyCatalogService} from '../services/catalogService';
+import {getShopifyCustomerAccountUrl} from '../services/shopifyStorefrontClient';
 import type {Collection} from '../types/product';
 import {BrandMark} from './BrandMark';
 
@@ -45,6 +46,7 @@ export function Header() {
   const location = useLocation();
   const {itemCount, subtotal} = useCart();
   const inputRef = useRef<HTMLInputElement>(null);
+  const customerAccountUrl = getShopifyCustomerAccountUrl();
 
   useEffect(() => {
     if (searchOpen) window.setTimeout(() => inputRef.current?.focus(), 20);
@@ -112,9 +114,11 @@ export function Header() {
             <button className="icon-button" aria-label="Search" onClick={() => setSearchOpen(true)}>
               <Search size={21} strokeWidth={1.5} />
             </button>
-            <Link className="icon-button desktop-account" to="/contact" aria-label="Customer care">
-              <MessageCircle size={20} strokeWidth={1.5} />
-            </Link>
+            {customerAccountUrl && (
+              <a className="icon-button desktop-account" href={customerAccountUrl} aria-label="Customer account" title="Customer account">
+                <UserRound size={20} strokeWidth={1.5} />
+              </a>
+            )}
             <Link className="cart-pill" to="/cart" aria-label={`Cart with ${itemCount} items`}>
               <ShoppingBag size={17} strokeWidth={1.6} />
               <span>{itemCount > 0 ? formatPKR(subtotal) : 'PKR 0'}</span>
@@ -148,6 +152,7 @@ export function Header() {
                 )}
               </div>
             ))}
+            {customerAccountUrl && <a href={customerAccountUrl}>CUSTOMER ACCOUNT</a>}
           </div>
         </div>
       </header>

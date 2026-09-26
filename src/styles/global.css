@@ -573,6 +573,9 @@ textarea::placeholder,
   line-height:1.35;
 }
 
+.newsletter__signup-link{color:var(--gold-light);text-decoration:none;transition:color .2s,border-color .2s}
+.newsletter__signup-link:hover{color:var(--gold);border-color:var(--gold)}
+
 .contact-placeholder{
   min-height:54px;
   justify-content:flex-start;

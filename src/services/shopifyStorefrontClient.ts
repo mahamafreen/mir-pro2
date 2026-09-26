@@ -274,6 +274,25 @@ const getShopifyConfig = (): ShopifyConfig => {
   };
 };
 
+const getShopifyStoreUrl = (path: string): string | undefined => {
+  const domain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN?.trim();
+  if (!domain) return undefined;
+
+  try {
+    let hostname = domain;
+    if (hostname.startsWith('https://')) hostname = hostname.slice(8);
+    else if (hostname.startsWith('http://')) hostname = hostname.slice(7);
+    const storeUrl = new URL(`https://${hostname}`);
+    if (storeUrl.username || storeUrl.password || storeUrl.pathname !== '/') return undefined;
+    return new URL(path, storeUrl).toString();
+  } catch {
+    return undefined;
+  }
+};
+
+export const getShopifyCustomerAccountUrl = () => getShopifyStoreUrl('/account');
+export const getShopifyNewsletterSignupUrl = () => getShopifyStoreUrl('/password');
+
 const queryShopify = async <TData>(query: string, variables: Record<string, unknown>): Promise<TData> => {
   const config = getShopifyConfig();
   const response = await fetch(config.endpoint, {
